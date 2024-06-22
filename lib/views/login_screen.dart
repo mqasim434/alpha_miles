@@ -1,15 +1,83 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:alpha_miles/views/dashboard.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class SigninScreen extends StatelessWidget {
+class SigninScreen extends StatefulWidget {
   SigninScreen({super.key});
 
+  @override
+  State<SigninScreen> createState() => _SigninScreenState();
+}
+
+class _SigninScreenState extends State<SigninScreen> {
   final fomrKey = GlobalKey<FormState>();
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  Future<bool> signinWithEmail(
+      String email, String password, BuildContext context) async {
+    EasyLoading.show(status: 'Logging in');
+    try {
+      QuerySnapshot<Map<String, dynamic>> querySnapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .where('email', isEqualTo: email)
+              .limit(1)
+              .get();
+      if (querySnapshot.docs.first.data()['password'] == password) {
+        await saveDataToSharedPrefs(email, password);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Logged in successfully')));
+        EasyLoading.dismiss();
+        return true;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.red, content: Text('Invalid Credentials')));
+        EasyLoading.dismiss();
+        return false;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.red, content: Text(e.toString())));
+      EasyLoading.dismiss();
+      return false;
+    }
+  }
+
+  Future<void> saveDataToSharedPrefs(String email, String password) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    await sharedPreferences.setString('email', email);
+    await sharedPreferences.setString('password', password);
+  }
+
+  Future<void> getPrefs() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    String? email = sharedPreferences.getString('email');
+    String? password = sharedPreferences.getString('password');
+
+    if (email != null &&
+        email.isNotEmpty &&
+        password != null &&
+        password.isNotEmpty) {
+      bool isLoggedIn = await signinWithEmail(email, password, context);
+      if (isLoggedIn) {
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => Dashboard()));
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getPrefs();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +146,18 @@ class SigninScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     if (fomrKey.currentState!.validate()) {
-                      emailController.clear();
-                      passwordController.clear();
-                      Navigator.pushReplacement(context,
-                          MaterialPageRoute(builder: (context) => Dashboard()));
+                      signinWithEmail(emailController.text,
+                              passwordController.text, context)
+                          .then((value) {
+                        if (value) {
+                          emailController.clear();
+                          passwordController.clear();
+                          Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => Dashboard()));
+                        }
+                      });
                     }
                   },
                   style: ElevatedButton.styleFrom(

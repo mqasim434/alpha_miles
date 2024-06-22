@@ -6,6 +6,7 @@ import 'package:alpha_miles/views/dashboard_screen.dart';
 import 'package:alpha_miles/views/login_screen.dart';
 import 'package:alpha_miles/views/riders_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -109,7 +110,10 @@ class _DashboardState extends State<Dashboard> {
                       label: 'Logout',
                       isSelected: false,
                       icon: Icons.logout,
-                      onTap: () {
+                      onTap: () async {
+                        SharedPreferences sharedPreferences =
+                            await SharedPreferences.getInstance();
+                        sharedPreferences.clear();
                         Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(

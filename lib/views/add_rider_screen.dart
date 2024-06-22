@@ -4,9 +4,11 @@ import 'dart:html' as html;
 import 'dart:io';
 
 import 'package:alpha_miles/models/rider_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class AddRiderScreen extends StatefulWidget {
   const AddRiderScreen({super.key});
@@ -159,7 +161,26 @@ class _AddRiderScreenState extends State<AddRiderScreen> {
                               imageUrl: pickedImageUrl,
                               documenstUrlsList: filesUrls,
                             );
-                            RiderModel.ridersList.add(riderModel);
+                            EasyLoading.show(status: 'Adding Rider');
+                            FirebaseFirestore.instance
+                                .collection('riders')
+                                .add(riderModel.toJson());
+                            EasyLoading.dismiss();
+                            showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: Text('New Rider Added'),
+                                    icon: Icon(Icons.check_circle),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                          },
+                                          child: Text('Ok')),
+                                    ],
+                                  );
+                                });
                             setState(() {});
                           }
                         } else {

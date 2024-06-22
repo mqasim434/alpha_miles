@@ -1,10 +1,21 @@
 // ignore_for_file: prefer_const_constructors
-
 import 'package:alpha_miles/views/dashboard.dart';
 import 'package:alpha_miles/views/login_screen.dart';
+import 'package:alpha_miles/views/splash_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: 'AIzaSyD24tOXpREon3i537WvvwxHAsSrqaJbZBo',
+      appId: '1:605280860204:web:38b902a94681d4fdb63989',
+      messagingSenderId: '605280860204',
+      projectId: 'alpha-miles-6cf46',
+    ),
+  );
   runApp(const MyApp());
 }
 
@@ -21,6 +32,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
+      builder: EasyLoading.init(),
       home: SigninScreen(),
     );
   }

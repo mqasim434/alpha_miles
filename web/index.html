@@ -32,6 +32,30 @@
   <title>alpha_miles</title>
   <link rel="manifest" href="manifest.json">
 
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD24tOXpREon3i537WvvwxHAsSrqaJbZBo",
+  authDomain: "alpha-miles-6cf46.firebaseapp.com",
+  projectId: "alpha-miles-6cf46",
+  storageBucket: "alpha-miles-6cf46.appspot.com",
+  messagingSenderId: "605280860204",
+  appId: "1:605280860204:web:38b902a94681d4fdb63989",
+  measurementId: "G-YR3Y638Q9L"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+  </script>
+
   <script>
     // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = null;

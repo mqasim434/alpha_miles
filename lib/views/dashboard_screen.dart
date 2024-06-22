@@ -2,7 +2,10 @@
 
 import 'package:alpha_miles/models/rider_model.dart';
 import 'package:alpha_miles/views/riders_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:alpha_miles/views/riders_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,6 +19,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<RiderModel> searchResults = [];
   String searchQuery = '';
+
+  @override
+  void initState() {
+    if (RiderModel.ridersList.isEmpty) {
+      getRiders();
+    }
+
+    super.initState();
+  }
+
+  void getRiders() async {
+    EasyLoading.show(status: 'Getting Riders');
+    RiderModel.ridersList.clear();
+    try {
+      QuerySnapshot<Map<String, dynamic>> querySnapshot =
+          await FirebaseFirestore.instance.collection('riders').get();
+
+      querySnapshot.docs.forEach((e) {
+        RiderModel.ridersList.add(RiderModel.fromJson(e.data()));
+      });
+    } catch (e) {
+      // Handle any errors here
+      print("Error getting riders: $e");
+    } finally {
+      EasyLoading.dismiss();
+    }
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,20 +159,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   blurRadius: 20,
                                 )
                               ]),
-                          child: ListTile(
-                            title: highlightSearchQuery(
-                              riderModel.fullName.toString(),
-                              searchQuery,
-                              TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black),
+                          child: InkWell(
+                            onTap: () {
+                              RiderDetailsWidget(context, screenWidth,
+                                  screenHeight, riderModel);
+                            },
+                            child: ListTile(
+                              title: highlightSearchQuery(
+                                riderModel.fullName.toString(),
+                                searchQuery,
+                                TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black),
+                              ),
+                              subtitle: highlightSearchQuery(
+                                riderModel.emiratesId.toString(),
+                                searchQuery,
+                                TextStyle(color: Colors.black),
+                              ),
+                              trailing: Icon(Icons.arrow_forward_ios),
                             ),
-                            subtitle: highlightSearchQuery(
-                              riderModel.emiratesId.toString(),
-                              searchQuery,
-                              TextStyle(color: Colors.black),
-                            ),
-                            trailing: Icon(Icons.arrow_forward_ios),
                           ),
                         ),
                       );
