@@ -40,7 +40,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         RiderModel.ridersList.add(RiderModel.fromJson(e.data()));
       });
     } catch (e) {
-      // Handle any errors here
       print("Error getting riders: $e");
     } finally {
       EasyLoading.dismiss();
