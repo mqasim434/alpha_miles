@@ -1,12 +1,12 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'dart:html' as html;
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:alpha_miles/models/rider_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dotted_border/dotted_border.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
@@ -18,21 +18,26 @@ class AddRiderScreen extends StatefulWidget {
 }
 
 class _AddRiderScreenState extends State<AddRiderScreen> {
-  String? _fileName;
-  List<PlatformFile>? _paths;
-  String? _directoryPath;
-  String? _extension;
-  bool _loadingPath = false;
-  bool _multiPick = false;
-  FileType _pickingType = FileType.any;
-
   List<html.File>? _files;
-
   String? pickedImageUrl;
+
+  TextEditingController nameController = TextEditingController();
+  TextEditingController riderIdController = TextEditingController();
+  TextEditingController emiratesIdController = TextEditingController();
+  TextEditingController emiratesIdExpiryDateController =
+      TextEditingController();
+  TextEditingController emiratesLocationController = TextEditingController();
+  TextEditingController liscenceNumberController = TextEditingController();
+  TextEditingController liscenceNumberExpiryDateController =
+      TextEditingController();
+  TextEditingController channelNameController = TextEditingController();
+  TextEditingController salaryPasswordController = TextEditingController();
+
+  final formKey = GlobalKey<FormState>();
 
   void _pickFiles() {
     html.FileUploadInputElement uploadInput = html.FileUploadInputElement();
-    uploadInput.accept = ''; // You can set file types here, e.g., 'image/*'
+    uploadInput.accept = 'image/*,application/pdf'; // Accept images and PDFs
     uploadInput.multiple = true;
     uploadInput.click();
 
@@ -72,144 +77,270 @@ class _AddRiderScreenState extends State<AddRiderScreen> {
     });
   }
 
-  TextEditingController nameController = TextEditingController();
-  TextEditingController emiratesIdController = TextEditingController();
-  TextEditingController emiratesLocationController = TextEditingController();
-  TextEditingController liscenceNumberController = TextEditingController();
-  TextEditingController channelNameController = TextEditingController();
+  Future<List<Map<String, dynamic>>?> uploadDocuments() async {
+    List<Map<String, dynamic>> documentsUrls = [];
+    EasyLoading.show(status: "Uploading");
+    try {
+      if (_files != null) {
+        for (var file in _files!) {
+          String fileName = file.name;
+          final reader = html.FileReader();
+          reader.readAsArrayBuffer(file);
 
-  final formKey = GlobalKey<FormState>();
+          await reader.onLoadEnd.first;
+
+          if (reader.result != null) {
+            final Uint8List bytes = reader.result as Uint8List;
+
+            Reference storageReference =
+                FirebaseStorage.instance.ref().child('salarySlips/$fileName');
+
+            UploadTask uploadTask = storageReference.putData(
+              bytes,
+              SettableMetadata(contentType: file.type),
+            );
+
+            TaskSnapshot taskSnapshot = await uploadTask;
+
+            String downloadURL = await taskSnapshot.ref.getDownloadURL();
+            documentsUrls.add({fileName: downloadURL});
+          } else {
+            throw Exception("Error reading file.");
+          }
+        }
+        EasyLoading.dismiss();
+        return documentsUrls;
+      } else {
+        EasyLoading.dismiss();
+        return null;
+      }
+    } catch (e) {
+      EasyLoading.dismiss();
+      return null;
+    }
+  }
+
+  Future<void> _selectDate(
+      BuildContext context, TextEditingController controller) async {
+    DateTime? picked = await _showDatePicker(context);
+    if (picked != null) {
+      setState(() {
+        controller.text = "${picked.toLocal()}".split(' ')[0];
+      });
+    }
+  }
+
+  Future<DateTime?> _showDatePicker(BuildContext context) {
+    return showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    return Row(
-      children: [
-        Expanded(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Add Rider',
+          style: TextStyle(fontSize: 24),
+        ),
+      ),
+      body: Row(
+        children: [
+          Expanded(
             flex: 4,
             child: Form(
               key: formKey,
-              child: Column(
+              child: ListView(
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  Text(
-                    'Add Rider',
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
                   MyTextField(
                     label: 'Rider Name',
                     icon: Icons.person,
                     controller: nameController,
                   ),
                   MyTextField(
+                    label: 'Rider Id',
+                    icon: Icons.person,
+                    controller: riderIdController,
+                  ),
+                  MyTextField(
                     label: 'Emirates Id',
                     icon: Icons.key,
                     controller: emiratesIdController,
                   ),
+                  TextFormField(
+                    controller: emiratesIdExpiryDateController,
+                    decoration: InputDecoration(
+                      labelText: 'Emirates Id Expiry Date',
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      prefixIcon: Icon(Icons.date_range),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return 'Field cannot be empty';
+                      }
+                      return null;
+                    },
+                    readOnly: true,
+                    onTap: () {
+                      _selectDate(context, emiratesIdExpiryDateController);
+                    },
+                  ),
                   MyTextField(
-                    label: 'Emirates Id Location',
+                    label: 'Location',
                     icon: Icons.location_on_outlined,
                     controller: emiratesLocationController,
                   ),
                   MyTextField(
-                    label: 'Liscence Number',
-                    icon: Icons.numbers,
+                    label: 'License Number',
+                    icon: Icons.format_list_numbered,
                     controller: liscenceNumberController,
+                  ),
+                  TextFormField(
+                    controller: liscenceNumberExpiryDateController,
+                    decoration: InputDecoration(
+                      labelText: 'License Number Expiry Date',
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      prefixIcon: Icon(Icons.date_range),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return 'Field cannot be empty';
+                      }
+                      return null;
+                    },
+                    readOnly: true,
+                    onTap: () {
+                      _selectDate(context, liscenceNumberExpiryDateController);
+                    },
                   ),
                   MyTextField(
                     label: 'Channel Name',
-                    icon: Icons.wifi_channel,
+                    icon: Icons.wifi,
                     controller: channelNameController,
                   ),
+                  MyTextField(
+                    label: 'Salary Password',
+                    icon: Icons.lock,
+                    controller: salaryPasswordController,
+                  ),
+                  SizedBox(height: 10),
                   ElevatedButton(
-                    onPressed: () {
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xffFF0000),
+                      minimumSize: Size(double.infinity, 50),
+                    ),
+                    onPressed: () async {
                       if (formKey.currentState!.validate()) {
                         if (pickedImageUrl != null) {
                           if (_files == null || _files!.isEmpty) {
-                            // Corrected condition
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
                                 title: Text('Upload Rider Documents'),
-                                icon: Icon(Icons.warning),
+                                content: Text('Please upload rider documents.'),
                                 actions: [
                                   TextButton(
                                     onPressed: () {
                                       Navigator.pop(context);
                                     },
                                     child: Text('Ok'),
-                                  )
+                                  ),
                                 ],
                               ),
                             );
                           } else {
-                            List<Map<String, String>> filesUrls = [];
-                            _files!.forEach((file) {
-                              filesUrls.add(
-                                  {file.name!: file.relativePath.toString()});
-                            });
-                            RiderModel riderModel = RiderModel(
-                              fullName: nameController.text,
-                              emiratesId: emiratesIdController.text,
-                              emiratesIdLocation:
-                                  emiratesLocationController.text,
-                              liscenceNumber: liscenceNumberController.text,
-                              channelName: channelNameController.text,
-                              imageUrl: pickedImageUrl,
-                              documenstUrlsList: filesUrls,
-                            );
-                            EasyLoading.show(status: 'Adding Rider');
-                            FirebaseFirestore.instance
-                                .collection('riders')
-                                .add(riderModel.toJson());
-                            EasyLoading.dismiss();
-                            showDialog(
+                            List<Map<String, dynamic>>? filesUrls =
+                                await uploadDocuments();
+                            if (filesUrls != null) {
+                              RiderModel riderModel = RiderModel(
+                                fullName: nameController.text,
+                                riderId: riderIdController.text,
+                                emiratesId: emiratesIdController.text,
+                                emiratesIdExpiryDate: emiratesIdExpiryDateController.text,
+                                location: emiratesLocationController.text,
+                                liscenceNumber: liscenceNumberController.text,
+                                liscenceNumberExpiryDate: liscenceNumberExpiryDateController.text,
+                                channelName: channelNameController.text,
+                                salaryPassword: salaryPasswordController.text,
+                                imageUrl: pickedImageUrl!,
+                                documenstUrlsList: filesUrls,
+                              );
+                              EasyLoading.show(status: 'Adding Rider');
+                              await FirebaseFirestore.instance
+                                  .collection('riders')
+                                  .add(riderModel.toJson());
+                              EasyLoading.dismiss();
+                              showDialog(
                                 context: context,
                                 builder: (context) {
                                   return AlertDialog(
                                     title: Text('New Rider Added'),
-                                    icon: Icon(Icons.check_circle),
+                                    content: Text(
+                                        'The rider has been successfully added.'),
                                     actions: [
                                       TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text('Ok')),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: Text('Ok'),
+                                      ),
                                     ],
                                   );
-                                });
-                            setState(() {});
+                                },
+                              );
+                              setState(() {});
+                            } else {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('Upload Failed'),
+                                  content: Text('Failed to upload documents.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: Text('Ok'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
                           }
                         } else {
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
                               title: Text('Upload Profile Image'),
-                              icon: Icon(Icons.warning),
+                              content: Text('Please upload a profile image.'),
                               actions: [
                                 TextButton(
                                   onPressed: () {
                                     Navigator.pop(context);
                                   },
                                   child: Text('Ok'),
-                                )
+                                ),
                               ],
                             ),
                           );
                         }
                       }
                     },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(screenWidth * 0.5, 50),
-                      maximumSize: Size(screenWidth * 0.5, 50),
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
                     child: Text(
                       'Create Rider',
                       style: TextStyle(color: Colors.white, fontSize: 18),
@@ -217,16 +348,17 @@ class _AddRiderScreenState extends State<AddRiderScreen> {
                   ),
                 ],
               ),
-            )),
-        Expanded(
-          flex: 3,
-          child: Center(
+            ),
+          ),
+          Expanded(
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
+                  flex: 4,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       pickedImageUrl == null
                           ? CircleAvatar(
@@ -235,106 +367,103 @@ class _AddRiderScreenState extends State<AddRiderScreen> {
                             )
                           : CircleAvatar(
                               radius: screenWidth * 0.08,
-                              backgroundImage:
-                                  NetworkImage(pickedImageUrl.toString()),
+                              backgroundImage: NetworkImage(pickedImageUrl!),
                             ),
-                      SizedBox(
-                        height: 20,
-                      ),
+                      SizedBox(height: 8),
                       ElevatedButton(
-                        onPressed: () => _pickImage(),
                         style: ElevatedButton.styleFrom(
-                            maximumSize: Size(screenWidth * 0.2, 50),
-                            minimumSize: Size(screenWidth * 0.2, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            backgroundColor: Colors.red),
+                            backgroundColor: Color(0xffFF0000)),
+                        onPressed: _pickImage,
                         child: Text(
                           'Upload Image',
-                          style: TextStyle(fontSize: 18, color: Colors.white),
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  margin: EdgeInsets.only(bottom: 20),
-                  height: 2,
-                  width: screenWidth * 0.25,
-                  color: Colors.black12,
-                ),
+                Divider(),
                 Expanded(
-                    child: Column(
-                  children: [
-                    Text(
-                      'Documents',
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    InkWell(
-                      onTap: () => _pickFiles.call(),
-                      child: DottedBorder(
-                        borderType: BorderType.RRect,
-                        strokeCap: StrokeCap.round,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 50.0, vertical: 10),
-                          child: Text('Upload Documents'),
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Documents',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    _files != null
-                        ? Expanded(
-                            child: ListView.builder(
-                              itemCount: _files!.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final file = _files![index];
-                                return ListTile(
-                                  title: Text(file.name),
-                                  trailing: InkWell(
-                                      onTap: () => _removeFile.call(index),
-                                      child: Icon(Icons.close)),
-                                );
-                              },
-                            ),
-                          )
-                        : SizedBox(),
-                  ],
-                ))
+                      SizedBox(height: 10),
+                      InkWell(
+                        onTap: _pickFiles,
+                        child: DottedBorder(
+                          borderType: BorderType.RRect,
+                          dashPattern: [6, 3],
+                          strokeWidth: 2,
+                          color: Colors.blue,
+                          child: Container(
+                            width: screenWidth * 0.25,
+                            height: screenHeight * 0.05,
+                            alignment: Alignment.center,
+                            child: Text('Upload Documents'),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      _files != null
+                          ? Expanded(
+                              child: ListView.builder(
+                                itemCount: _files!.length,
+                                itemBuilder: (context, index) {
+                                  final file = _files![index];
+                                  return ListTile(
+                                    title: Text(file.name),
+                                    trailing: IconButton(
+                                      icon: Icon(Icons.remove_circle),
+                                      onPressed: () {
+                                        _removeFile(index);
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                            )
+                          : SizedBox(),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-        )
-      ],
+        ],
+      ),
     );
   }
 }
 
 class MyTextField extends StatelessWidget {
-  const MyTextField({
-    super.key,
-    required this.label,
-    required this.icon,
-    required this.controller,
-  });
-
   final String label;
   final IconData icon;
   final TextEditingController controller;
 
+  const MyTextField({
+    Key? key,
+    required this.label,
+    required this.icon,
+    required this.controller,
+  }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(
-          label: Text(label),
-          hintText: 'Enter $label',
+          labelText: label,
+          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           prefixIcon: Icon(icon),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
@@ -342,10 +471,9 @@ class MyTextField extends StatelessWidget {
         ),
         validator: (value) {
           if (value!.isEmpty) {
-            return "Field can't be Empty";
-          } else {
-            return null;
+            return 'Field cannot be empty';
           }
+          return null;
         },
       ),
     );

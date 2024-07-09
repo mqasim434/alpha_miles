@@ -5,6 +5,8 @@ import 'package:alpha_miles/views/add_rider_screen.dart';
 import 'package:alpha_miles/views/dashboard_screen.dart';
 import 'package:alpha_miles/views/login_screen.dart';
 import 'package:alpha_miles/views/riders_screen.dart';
+import 'package:alpha_miles/views/salaries.dart';
+import 'package:alpha_miles/views/search_salary.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,6 +24,8 @@ class _DashboardState extends State<Dashboard> {
     DashboardScreen(),
     AddRiderScreen(),
     RidersScreen(),
+    SalariesScreen(),
+    SearchSalaryScreen(),
     AboutScreen(),
   ];
 
@@ -46,8 +50,8 @@ class _DashboardState extends State<Dashboard> {
                   Column(
                     children: [
                       Image.asset(
-                        'assets/logo/logo_1.png',
-                        width: screenWidth * 0.15,
+                        'assets/logo/logo_2.png',
+                        width: screenWidth * 0.08,
                       ),
                       SizedBox(
                         height: 20,
@@ -92,11 +96,37 @@ class _DashboardState extends State<Dashboard> {
                         },
                       ),
                       NavItem(
+                        label: 'Salaries',
+                        isSelected: selectedNavItem == 'Salaries',
+                        icon: Icons.attach_money,
+                        onTap: () {
+                          pageController.animateToPage(3,
+                              duration: Duration(microseconds: 10),
+                              curve: Curves.ease);
+                          setState(() {
+                            selectedNavItem = 'Salaries';
+                          });
+                        },
+                      ),
+                      NavItem(
+                        label: 'Search Salary',
+                        isSelected: selectedNavItem == 'Search Salary',
+                        icon: Icons.search,
+                        onTap: () {
+                          pageController.animateToPage(4,
+                              duration: Duration(microseconds: 10),
+                              curve: Curves.ease);
+                          setState(() {
+                            selectedNavItem = 'Search Salary';
+                          });
+                        },
+                      ),
+                      NavItem(
                         label: 'About',
                         isSelected: selectedNavItem == 'About',
                         icon: Icons.info_rounded,
                         onTap: () {
-                          pageController.animateToPage(3,
+                          pageController.animateToPage(5,
                               duration: Duration(microseconds: 10),
                               curve: Curves.ease);
                           setState(() {
@@ -168,7 +198,7 @@ class NavItem extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.red : Colors.black,
+              color: isSelected ? Color(0xffFF0000) : Colors.black,
             ),
             SizedBox(
               width: 10,

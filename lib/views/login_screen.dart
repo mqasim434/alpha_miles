@@ -25,7 +25,7 @@ class _SigninScreenState extends State<SigninScreen> {
     try {
       QuerySnapshot<Map<String, dynamic>> querySnapshot =
           await FirebaseFirestore.instance
-              .collection('users')
+              .collection('admins')
               .where('email', isEqualTo: email)
               .limit(1)
               .get();
@@ -38,13 +38,13 @@ class _SigninScreenState extends State<SigninScreen> {
         return true;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.red, content: Text('Invalid Credentials')));
+            backgroundColor: Color(0xffFF0000), content: Text('Invalid Credentials')));
         EasyLoading.dismiss();
         return false;
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.red, content: Text(e.toString())));
+          SnackBar(backgroundColor: Color(0xffFF0000), content: Text(e.toString())));
       EasyLoading.dismiss();
       return false;
     }
@@ -163,7 +163,7 @@ class _SigninScreenState extends State<SigninScreen> {
                   style: ElevatedButton.styleFrom(
                       maximumSize: Size(double.infinity, 60),
                       minimumSize: Size(double.infinity, 60),
-                      backgroundColor: Colors.red,
+                      backgroundColor: Color(0xffFF0000),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20))),
                   child: Text(

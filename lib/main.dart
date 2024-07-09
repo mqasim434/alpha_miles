@@ -10,11 +10,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: FirebaseOptions(
-      apiKey: 'AIzaSyD24tOXpREon3i537WvvwxHAsSrqaJbZBo',
-      appId: '1:605280860204:web:38b902a94681d4fdb63989',
-      messagingSenderId: '605280860204',
-      projectId: 'alpha-miles-6cf46',
-    ),
+        apiKey: 'AIzaSyD24tOXpREon3i537WvvwxHAsSrqaJbZBo',
+        appId: '1:605280860204:web:38b902a94681d4fdb63989',
+        messagingSenderId: '605280860204',
+        projectId: 'alpha-miles-6cf46',
+        storageBucket: 'gs://alpha-miles-6cf46.appspot.com'),
   );
   runApp(const MyApp());
 }

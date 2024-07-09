@@ -69,7 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: EdgeInsets.all(10),
                 margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                 decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: Color(0xffFF0000),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
@@ -114,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 TextFormField(
                   controller: searchController,
                   decoration: InputDecoration(
-                    hintText: 'Rider Name/Emirates Id',
+                    hintText: 'Rider Name/Rider Id',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20)),
                   ),
@@ -129,7 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   .toString()
                                   .toLowerCase()
                                   .contains(value.toLowerCase()) ||
-                              rider.emiratesId
+                              rider.riderId
                                   .toString()
                                   .toLowerCase()
                                   .contains(value.toLowerCase());
@@ -160,8 +160,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ]),
                           child: InkWell(
                             onTap: () {
-                              RiderDetailsWidget(context, screenWidth,
-                                  screenHeight, riderModel);
+                              RiderDetailsWidget(
+                                context,
+                                screenWidth,
+                                screenHeight,
+                                riderModel,
+                              );
                             },
                             child: ListTile(
                               title: highlightSearchQuery(
@@ -219,7 +223,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (index < text.length) {
         highlighted.add(TextSpan(
             text: text.substring(index, index + matches.length),
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)));
+            style: TextStyle(
+                color: Color(0xffFF0000), fontWeight: FontWeight.bold)));
         index += matches.length;
       }
     });
