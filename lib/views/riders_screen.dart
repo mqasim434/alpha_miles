@@ -3,10 +3,12 @@
 import 'dart:html' as html;
 
 import 'package:alpha_miles/models/rider_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class RidersScreen extends StatefulWidget {
   const RidersScreen({super.key});
@@ -192,7 +194,7 @@ Future<dynamic> RiderDetailsWidget(BuildContext context, double screenWidth,
                             ),
                             ListTile(
                               title: Text(
-                                'Emrates Id Expiry Date',
+                                'Emirates Id Expiry Date',
                                 style:
                                     TextStyle(fontSize: 14, color: Colors.grey),
                               ),
@@ -204,7 +206,7 @@ Future<dynamic> RiderDetailsWidget(BuildContext context, double screenWidth,
                             ),
                             ListTile(
                               title: Text(
-                                'Liscence Number Expiry Date',
+                                'License Number Expiry Date',
                                 style:
                                     TextStyle(fontSize: 14, color: Colors.grey),
                               ),
@@ -275,7 +277,7 @@ Future<dynamic> RiderDetailsWidget(BuildContext context, double screenWidth,
                                 );
                               })
                           : Center(
-                              child: Text('No Documetns FOund'),
+                              child: Text('No Documents Found'),
                             ),
                     ),
                   ],
@@ -297,11 +299,16 @@ Future<dynamic> RiderDetailsWidget(BuildContext context, double screenWidth,
       });
 }
 
-class RiderTileWidget extends StatelessWidget {
+class RiderTileWidget extends StatefulWidget {
   const RiderTileWidget({super.key, required this.riderModel});
 
   final RiderModel riderModel;
 
+  @override
+  State<RiderTileWidget> createState() => _RiderTileWidgetState();
+}
+
+class _RiderTileWidgetState extends State<RiderTileWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -317,11 +324,93 @@ class RiderTileWidget extends StatelessWidget {
         children: [
           ListTile(
             leading: CircleAvatar(
-              backgroundImage: NetworkImage(riderModel.imageUrl.toString()),
+              backgroundImage:
+                  NetworkImage(widget.riderModel.imageUrl.toString()),
             ),
-            title: Text(riderModel.fullName.toString()),
-            subtitle: Text('Emirates ID: ${riderModel.emiratesId}'),
-            trailing: Icon(Icons.arrow_forward_ios),
+            title: Text(widget.riderModel.fullName.toString()),
+            subtitle: Text('Emirates ID: ${widget.riderModel.emiratesId}'),
+            trailing: InkWell(
+                onTap: () {
+                  showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text('Are you sure to delete the Rider?'),
+                          actions: [
+                            ElevatedButton(
+                              onPressed: () async {
+                                try {
+                                  EasyLoading.show(status: 'Deleting');
+                                  QuerySnapshot<Map<String, dynamic>>
+                                      querySnapshot = await FirebaseFirestore
+                                          .instance
+                                          .collection('riders')
+                                          .where('riderId',
+                                              isEqualTo: widget
+                                                  .riderModel.riderId
+                                                  .toString())
+                                          .limit(1)
+                                          .get();
+
+                                  await FirebaseFirestore.instance
+                                      .collection('riders')
+                                      .doc(querySnapshot.docs.first.id)
+                                      .delete()
+                                      .then((value) {
+                                    Navigator.pop(context);
+                                  }).then((value) async {
+                                    QuerySnapshot<Map<String, dynamic>>
+                                        querySnapshot = await FirebaseFirestore
+                                            .instance
+                                            .collection('riders')
+                                            .get();
+
+                                    setState(() {
+                                      if (querySnapshot.docs.isNotEmpty) {
+                                        RiderModel.ridersList = querySnapshot
+                                            .docs
+                                            .map((e) =>
+                                                RiderModel.fromJson(e.data()))
+                                            .toList();
+                                      } else {
+                                        RiderModel.ridersList = [];
+                                      }
+                                    });
+                                  });
+                                  EasyLoading.dismiss();
+                                } catch (e) {
+                                  EasyLoading.dismiss();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(e.toString())));
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red),
+                              child: Text(
+                                'Yes',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green),
+                              child: Text(
+                                'No',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      });
+                },
+                child: CircleAvatar(child: Icon(Icons.delete))),
           )
         ],
       ),
